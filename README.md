@@ -38,6 +38,7 @@ go get -u github.com/golang/dep/cmd/dep
 
 ## Execution :
 Sample Execution Output:
+```bash
 PO=pos1.csv SLOT=slots1.csv OUTPUT=output.csv ./taskposcheduler.linux
 wrote 24681 bytes
 Output is saved in :  **output.csv**
@@ -55,3 +56,4 @@ slot_start_dt,slot_end_dt,dock_id,po_id,item_id,quantity
 .
 .
 .
+```
