@@ -41,7 +41,7 @@ Sample Execution Output:
 ```bash
 PO=pos1.csv SLOT=slots1.csv OUTPUT=output.csv ./taskposcheduler.linux
 wrote 24681 bytes
-Output is saved in :  **output.csv**
+Output is saved in :  output.csv
 Want to see results based on:
 1 dock_id
 2 date
