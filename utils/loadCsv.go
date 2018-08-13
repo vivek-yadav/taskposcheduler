@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+var DT_FORMAT = "2006-01-02T15:04:05"
+
 func LoadCsv(file string) (records [][]string, err error) {
 	var f *os.File
 	f, err = os.Open(file)

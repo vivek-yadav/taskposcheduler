@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/vivek-yadav/taskposcheduler/models"
 	"github.com/vivek-yadav/taskposcheduler/utils"
 )
@@ -36,7 +34,7 @@ func main() {
 	err = poList.Parse(poRecords, true)
 	utils.CheckAndExit(err)
 
-	fmt.Print(slotList.ToCSV())
-	fmt.Print(poList.ToCSV())
+	scheduledSlotList := new(models.ScheduledSlotList)
+	scheduledSlotList.GetOptimizedSchedule(poList, slotList)
 
 }
