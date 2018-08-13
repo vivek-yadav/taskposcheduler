@@ -1,7 +1,9 @@
 package models
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +45,22 @@ func (slotList *SlotList) Parse(records [][]string, hasHeader bool) (err error) 
 		slot := new(Slot)
 		slot.Parse(v)
 		*slotList = append(*slotList, slot)
+	}
+	return
+}
+
+func (slotList *SlotList) FindClosest(val int) (index int, err error) {
+	if len(*slotList) == 0 {
+		err = errors.New("Array is empty")
+		return
+	}
+	dif := math.MaxInt32
+	index = 0
+	for i, v := range *slotList {
+		if v.Remaining-val < dif && v.Remaining >= val {
+			dif = v.Remaining - val
+			index = i
+		}
 	}
 	return
 }

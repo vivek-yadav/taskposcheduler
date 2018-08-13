@@ -1,9 +1,13 @@
 package models
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/vivek-yadav/taskposcheduler/utils"
 )
@@ -26,8 +30,6 @@ func (list *ScheduledSlotList) GetOptimizedSchedule(poList *POList, slotList *Sl
 	sort.Slice((*poList), func(i, j int) bool {
 		return (*poList)[i].Quantity > (*poList)[j].Quantity
 	})
-
-	fmt.Println(poList.ToCSV())
 
 	for _, po := range *poList {
 
@@ -56,27 +58,33 @@ func (list *ScheduledSlotList) GetOptimizedSchedule(poList *POList, slotList *Sl
 			dockMap[v.DockId] = append(dockMap[v.DockId], v)
 		}
 
-		if (*slotList)[0].Remaining == 0 {
+		var index int
+		index, err = slotList.FindClosest(po.Quantity)
+		if err != nil {
+			break
+		}
+		if (*slotList)[index].Remaining == 0 {
 			break
 		}
 		sslot := new(ScheduledSlot)
-		if (*slotList)[0].Remaining >= po.Quantity {
-			(*slotList)[0].Remaining -= po.Quantity
+		if (*slotList)[index].Remaining >= po.Quantity {
+			(*slotList)[index].Remaining -= po.Quantity
 
-			sslot.DockId = (*slotList)[0].DockId
-			sslot.SlotStartDT = (*slotList)[0].SlotStartDT
-			sslot.SlotEndDT = (*slotList)[0].SlotEndDT
+			sslot.DockId = (*slotList)[index].DockId
+			sslot.SlotStartDT = (*slotList)[index].SlotStartDT
+			sslot.SlotEndDT = (*slotList)[index].SlotEndDT
 			sslot.PoId = po.PoId
 			sslot.ItemId = po.ItemId
 			sslot.Quantity = po.Quantity
 			*list = append(*list, sslot)
-		} else if (*slotList)[0].Remaining > 0 {
+		} else if (*slotList)[index].Remaining > 0 {
 
 			poLeft := po.Quantity
-			allSlotsForADock := dockMap[(*slotList)[0].DockId]
+			allSlotsForADock := dockMap[(*slotList)[index].DockId]
 			for _, s := range allSlotsForADock {
 				if s.Remaining >= poLeft {
 					s.Remaining -= poLeft
+					sslot = new(ScheduledSlot)
 					sslot.DockId = s.DockId
 					sslot.SlotStartDT = s.SlotStartDT
 					sslot.SlotEndDT = s.SlotEndDT
@@ -84,15 +92,17 @@ func (list *ScheduledSlotList) GetOptimizedSchedule(poList *POList, slotList *Sl
 					sslot.ItemId = po.ItemId
 					sslot.Quantity = poLeft
 					*list = append(*list, sslot)
+					break
 				} else if s.Remaining > 0 {
-					poLeft -= s.Remaining
-					s.Remaining = 0
+					sslot = new(ScheduledSlot)
 					sslot.DockId = s.DockId
 					sslot.SlotStartDT = s.SlotStartDT
 					sslot.SlotEndDT = s.SlotEndDT
 					sslot.PoId = po.PoId
 					sslot.ItemId = po.ItemId
 					sslot.Quantity = s.Remaining
+					poLeft -= s.Remaining
+					s.Remaining = 0
 					*list = append(*list, sslot)
 				} else {
 					break
@@ -103,7 +113,50 @@ func (list *ScheduledSlotList) GetOptimizedSchedule(poList *POList, slotList *Sl
 		}
 
 	}
+	return
+}
 
-	fmt.Println(list.ToCSV())
+func (list *ScheduledSlotList) SaveTo(fileName string) (err error) {
+	var file *os.File
+	file, err = os.Create(fileName)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	var n int
+	n, err = writer.WriteString(list.ToCSV())
+	fmt.Printf("wrote %d bytes\n", n)
+	return
+}
+
+func (list *ScheduledSlotList) ShowResultsForDockId(dockId int) (err error) {
+	selectedList := new(ScheduledSlotList)
+	for _, v := range *list {
+		if v.DockId == dockId {
+			*selectedList = append(*selectedList, v)
+		}
+	}
+	if len(*selectedList) == 0 {
+		return errors.New("dock_id not found")
+	}
+	fmt.Println(selectedList.ToCSV())
+	return
+}
+
+func (list *ScheduledSlotList) ShowResultsForDate(dt time.Time) (err error) {
+	selectedList := new(ScheduledSlotList)
+	for _, v := range *list {
+		if v.SlotStartDT.Format(utils.FIND_DT_FORMAT) == dt.Format(utils.FIND_DT_FORMAT) {
+			*selectedList = append(*selectedList, v)
+		}
+	}
+	if len(*selectedList) == 0 {
+		return errors.New("Date not found")
+	}
+	fmt.Println(selectedList.ToCSV())
 	return
 }
